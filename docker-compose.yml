@@ -1,0 +1,7 @@
+version: "3.8"
+services:
+  rawg-to-steam-redirect:
+    build: .
+    ports:
+      - "80:9999"
+    restart: always

@@ -3,5 +3,5 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-EXPOSE 80
+EXPOSE 9999
 CMD [ "python", "rawg-to-steam/main.py" ]
