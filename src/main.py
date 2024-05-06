@@ -13,7 +13,7 @@ from steam_web_api import Steam
 
 app = Flask(__name__)
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 sanitizer = bleach.sanitizer.Cleaner(tags=[], attributes=[], strip=True, strip_comments=True, filters=[], protocols=[])
 language = os.environ.get("LANG", "english")
