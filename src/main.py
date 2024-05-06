@@ -6,10 +6,10 @@ import requests
 import html
 import sqlite3
 import json
+import datetime
 from time import time, strftime
 from flask import Flask, jsonify, request, redirect
 from steam_web_api import Steam
-from datetime import datetime
 
 app = Flask(__name__)
 logger = logging.getLogger()
@@ -69,7 +69,7 @@ def cache_data(app_id, data):
 def format_game_data(game_data, app_id):
     released = game_data.get("release_date", {}).get("date", None)
     if released:
-        released = datetime.strptime(released, "%d %B, %Y").isoformat() + "Z"
+        released = datetime.datetime.strptime(released, '%d %b, %Y').strftime('%Y-%m-%dT%H:%M:%SZ')
         
     return {
         "id": game_data["steam_appid"],
