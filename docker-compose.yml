@@ -5,3 +5,9 @@ services:
     ports:
       - "80:9999"
     restart: always
+    develop:
+      watch:
+        - action: rebuild
+          path: .
+          target: /usr/src/app
+

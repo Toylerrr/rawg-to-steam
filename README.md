@@ -19,11 +19,8 @@ Use this endpoint to search for games.
 #### Parameters
 
 - `search`: The query string to search for.
-  - in: query
-  - required: true
-- `key`: A [Steam Web API Key](https://steamcommunity.com/dev/apikey). Less data will be returned if not provided.
-  - in: query
-  - required: false
+  - in: `query`
+  - required: `true`
 
 ### `/api/games/:id`
 
@@ -32,11 +29,12 @@ This endpoint retrieves detailed information about a specific game.
 #### Parameters
 
 - `id`: The Steam ID of the game to retrieve.
-  - in: path
-  - required: true
-- `key`: A [Steam Web API Key](https://steamcommunity.com/dev/apikey). Less data will be returned if not provided.
-  - in: query
-  - required: false
+  - in: `path`
+  - required: `true`
+- `lang`: The language to retrieve data in. Defaults to `english`. Seems to take the english name of the language in lowercase letters. No standard nfortunately. Other examples that worked when testing were: `german`, `italian`
+  - in: `query`
+  - required: `false`
+  - default: `english`
 
 ## Setup ⚙️
 
@@ -61,8 +59,15 @@ services:
 ## Tips for Usage with GameVault 🎲
 
 - Set the `RAWG_API_URL` environment variable to `https://rawg2steam.phalco.de/api` to redirect the requests to the hosted instance.
-- Set the `RAWG_API_KEY` environment variable to a Steam Web API Key if you have one. Otherwise, less data will be returned.
 - Set the `RAWG_API_CACHE_DAYS` environment variable to `36500`, so GameVault does not try to search for rawg ids of existing games on steam for the next 100 years.
+
+## Limitations ❗
+
+- Maximum of 5 Search Results
+- No Pagination
+- No sorting, filters, or other advanced features
+- Too many requests could be rate-limited by Steam.
+- Developer and Publisher IDs are their hashed names, and not guaranteed to be unique, because Steam does not provide them.
 
 ## Credit 💡
 
