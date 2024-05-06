@@ -10,7 +10,7 @@ This Project was kickstarted by our trusted community member [Toylerrr](https://
 
 The transition from GameVault to move off of RAWG will likely require a significant amount of time and effort, prompting the need for a swift resolution.
 
-## Supported APIs 🤖
+## Features & Supported APIs 🤖
 
 ### `/api/games?search=query`
 
@@ -36,6 +36,28 @@ This endpoint retrieves detailed information about a specific game.
   - required: `false`
   - default: `english`
 
+### `/api/stats`
+
+This endpoint returns the number of times each endpoint has been called.
+
+### Response Caching
+
+To reduce the number of API calls `/api/games/:id` responses are cached for 30 days in a local SQLite database.
+
+You will need to mount that file somewhere, so the data can persist.
+
+### Selecting a default language
+
+If you want to set a default language to `german` or `italian` for example for all incoming requests, you can set `LANG=german` in your environment variables.
+
+## Limitations ❗
+
+- Maximum of 5 Search Results
+- No Pagination
+- No sorting, filters, or other advanced features
+- Too many requests could be rate-limited by Steam.
+- Developer and Publisher IDs are their hashed names, and not guaranteed to be unique, because Steam does not provide them.
+
 ## Setup ⚙️
 
 ### Hosted Instance ☁️
@@ -51,6 +73,8 @@ version: "3.8"
 services:
   rawg-to-steam-redirect:
     image: phalcode/rawg-to-steam-redirect:latest
+    volumes:
+      - /path/to/database.sqlite:/usr/src/app/database.sqlite
     ports:
       - "80:9999"
     restart: always
@@ -58,16 +82,8 @@ services:
 
 ## Tips for Usage with GameVault 🎲
 
-- Set the `RAWG_API_URL` environment variable to `https://rawg2steam.phalco.de/api` to redirect the requests to the hosted instance.
-- Set the `RAWG_API_CACHE_DAYS` environment variable to `36500`, so GameVault does not try to search for rawg ids of existing games on steam for the next 100 years.
-
-## Limitations ❗
-
-- Maximum of 5 Search Results
-- No Pagination
-- No sorting, filters, or other advanced features
-- Too many requests could be rate-limited by Steam.
-- Developer and Publisher IDs are their hashed names, and not guaranteed to be unique, because Steam does not provide them.
+- Set GameVaults `RAWG_API_URL` environment variable to `https://rawg2steam.phalco.de/api` to redirect the requests to the hosted instance.
+- Set GameVaults `RAWG_API_CACHE_DAYS` environment variable to `36500`, so GameVault does not try to search for rawg ids of existing games on steam for the next 100 years.
 
 ## Credit 💡
 

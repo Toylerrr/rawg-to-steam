@@ -1,5 +1,13 @@
 # Changelog
 
+## v4
+
+- Implemented Database Cache
+- Implemented Stats API
+- Improved String Sanitizer
+- Imporved Boxart Selection
+- Use ISO datetime format for Release Date
+
 ## v3
 
 - Support for Developers
