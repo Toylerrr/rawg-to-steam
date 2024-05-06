@@ -1,5 +1,11 @@
-from flask import Flask, jsonify, request
+import logging
+from time import strftime
+import traceback
+from flask import Flask, jsonify, request, redirect
 from steam_web_api import Steam
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 app = Flask(__name__)
 
@@ -15,7 +21,7 @@ def search_steam_games():
 
     steam_games = steam.apps.search_games(query)
 
-    app.logger.info(steam_games)
+    app.logger.debug(steam_games)
     formatted_games = {
         "count": len(steam_games["apps"]),
         "results": [
@@ -41,7 +47,7 @@ def get_steam_game(app_id):
 
     steam_game = steam.apps.get_app_details(app_id)
 
-    app.logger.info(steam_game)
+    app.logger.debug(steam_game)
 
     formatted_game = {
         "id": steam_game[str(app_id)]["data"]["steam_appid"],
@@ -56,8 +62,18 @@ def get_steam_game(app_id):
 
     return jsonify(formatted_game)
 
+# Help for lost people
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def help(path):
+    return redirect("https://github.com/Phalcode/rawg-to-steam-redirect", code=302)
 
-
+@app.after_request
+def after_request(response):
+    timestamp = strftime('[%Y-%b-%d %H:%M]')
+    original_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('HTTP_X_REAL_IP', request.remote_addr))
+    logger.error('%s %s %s %s %s %s', timestamp, original_ip, request.method, request.scheme, request.path, response.status)
+    return response
 
 if __name__ == '__main__':
     from waitress import serve
