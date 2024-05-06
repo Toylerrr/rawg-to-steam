@@ -62,7 +62,7 @@ services:
 
 - Set the `RAWG_API_URL` environment variable to `https://rawg2steam.phalco.de/api` to redirect the requests to the hosted instance.
 - Set the `RAWG_API_KEY` environment variable to a Steam Web API Key if you have one. Otherwise, less data will be returned.
-- Set `RAWG_API_CACHE_DAYS` to `36500`, so GameVault does not try to search for rawg ids of existing games on steam for the next 100 years.
+- Set the `RAWG_API_CACHE_DAYS` environment variable to `36500`, so GameVault does not try to search for rawg ids of existing games on steam for the next 100 years.
 
 ## Credit 💡
 
