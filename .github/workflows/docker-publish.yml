@@ -40,6 +40,7 @@ jobs:
             ghcr.io/phalcode/rawg-to-steam-redirect:latest
 
       - name: Discord notification
+        if: contains(github.event.head_commit.message, 'release')
         id: discord
         uses: Ilshidur/action-discord@master
         env:

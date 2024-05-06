@@ -60,4 +60,5 @@ def get_steam_game(app_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=9999)
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=9999)
