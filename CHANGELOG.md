@@ -5,7 +5,7 @@
 - Implemented Database Cache
 - Implemented Stats API
 - Improved String Sanitizer
-- Imporved Boxart Selection
+- Improved Boxart Selection
 - Use ISO datetime format for Release Date
 
 ## v3
