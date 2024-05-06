@@ -75,7 +75,7 @@ def get_steam_game(app_id):
         "metacritic": game_data.get("metacritic", {}).get("score", None),
         "website": game_data.get("website", None),
         "genres": game_data.get("genres", []),
-        "tags": game_data.get("categories", []),
+        "tags": [{"name": tag, "language": "eng"} for tag in game_data.get("categories", [])],
         "released": game_data.get("release_date", {}).get("date", None) + "Z",
         "developers": [{"id": abs(hash(dev)) % (10 ** 9), "name": dev} for dev in game_data.get("developers", [])],
         "publishers": [{"id": abs(hash(pub)) % (10 ** 9), "name": pub} for pub in game_data.get("publishers", [])],
