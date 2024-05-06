@@ -69,7 +69,7 @@ def get_steam_game(app_id):
         "id": game_data["steam_appid"],
         "name": game_data["name"],
         "slug": game_data["name"].lower().replace(" ", "-"),
-        "background_image": game_data.get("background", game_data.get("background_raw", game_data.get("screenshots", [])[0].get("path_full", game_data.get("header_image", "")))),
+        "background_image": game_data.get("background_raw", game_data.get("screenshots", [])[0].get("path_full", game_data.get("header_image", ""))),
         "box_image": f"https://steamcdn-a.akamaihd.net/steam/apps/{app_id}/library_600x900_2x.jpg",
         "description_raw": clean_string(game_data.get("detailed_description", "")),
         "metacritic": game_data.get("metacritic", {}).get("score", None),
