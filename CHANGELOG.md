@@ -1,5 +1,10 @@
 # Changelog
 
+## v5
+
+- Improved DateParser - Fixes [Phalcode/rawg-to-steam-redirect#1](https://github.com/Phalcode/rawg-to-steam-redirect/issues/1)
+- Made Cache support multiple languages
+
 ## v4
 
 - Implemented Database Cache

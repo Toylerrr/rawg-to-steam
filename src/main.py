@@ -9,7 +9,9 @@ import json
 import datetime
 from time import time, strftime
 from flask import Flask, jsonify, request, redirect
+from dateutil import parser
 from steam_web_api import Steam
+from waitress import serve
 
 app = Flask(__name__)
 logger = logging.getLogger()
@@ -34,8 +36,8 @@ def increment_stat(stat):
     cursor.execute("UPDATE stats SET count = count + 1 WHERE stat = ?", (stat,))
     conn.commit()
 
-def get_steam_app_details(app_id, lang=language):
-    cached_data = get_cached_data(app_id)
+def get_steam_app_details(path, app_id, lang=language):
+    cached_data = get_cached_data(path)
     if cached_data:
         return cached_data
 
@@ -43,33 +45,33 @@ def get_steam_app_details(app_id, lang=language):
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
-        cache_data(app_id, json.dumps(data))
+        cache_game(path, json.dumps(data))
         return data
     else:
         logger.error(f"Failed to retrieve data. Status code: {response.status_code}")
         return None
 
-def get_cached_data(app_id):
-    cursor.execute("SELECT data, timestamp FROM games WHERE app_id = ?", (app_id,))
+def get_cached_data(path):
+    cursor.execute("SELECT data, timestamp FROM games_v2 WHERE path = ?", (path,))
     result = cursor.fetchone()
 
     if result:
         data, timestamp = result
         if time() - timestamp <= 30 * 24 * 3600:
-            logger.debug(f"Retrieved cached data for {app_id}")
+            logger.debug(f"Retrieved cached data for {path}")
             increment_stat('games_from_cache')
             return json.loads(data)
     return None
 
-def cache_data(app_id, data):
-    cursor.execute("REPLACE INTO games (app_id, data, timestamp) VALUES (?, ?, ?)", (app_id, data, time()))
+def cache_game(path, data):
+    cursor.execute("REPLACE INTO games_v2 (path, data, timestamp) VALUES (?, ?, ?)", (path, data, time()))
     conn.commit()
-    logger.debug(f"Cached data for {app_id}")
+    logger.debug(f"Cached data for {path}")
 
 def format_game_data(game_data, app_id):
     released = game_data.get("release_date", {}).get("date", None)
     if released:
-        released = datetime.datetime.strptime(released, '%d %b, %Y').strftime('%Y-%m-%dT%H:%M:%SZ')
+        released = parser.parse("07 May, 2024").strftime('%Y-%m-%dT%H:%M:%SZ')
         
     return {
         "id": game_data["steam_appid"],
@@ -112,7 +114,7 @@ def search_steam_games():
 
 @app.route("/api/games/<int:app_id>", methods=["GET"])
 def get_steam_game(app_id):
-    steam_game = get_steam_app_details(app_id, request.args.get("lang", language))
+    steam_game = get_steam_app_details(request.full_path, app_id, request.args.get("lang", language))
     app.logger.debug(steam_game)
     if not steam_game or str(app_id) not in steam_game or steam_game.get(str(app_id))["success"] == False:
         return jsonify({"error": "Game not found"}), 404
@@ -141,8 +143,8 @@ def log_request(response):
     return response
 
 if __name__ == "__main__":
-    cursor.execute('''CREATE TABLE IF NOT EXISTS games (app_id TEXT PRIMARY KEY, data TEXT, timestamp REAL)''')
+    cursor.execute('''DROP TABLE IF EXISTS games''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS games_v2 (path TEXT PRIMARY KEY, data TEXT, timestamp REAL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS stats (stat TEXT PRIMARY KEY, count INTEGER)''')
-    cursor.execute('''CREATE INDEX IF NOT EXISTS idx_app_id ON games (app_id)''')
-    from waitress import serve
+    cursor.execute('''CREATE INDEX IF NOT EXISTS idx_path ON games_v2 (path)''')
     serve(app, host="0.0.0.0", port=9999)
