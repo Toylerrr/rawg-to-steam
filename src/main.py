@@ -43,8 +43,9 @@ def get_steam_app_details(path, app_id, lang=language):
 
     url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l={lang}"
     response = requests.get(url)
-    if response.status_code == 200:
+    if response.status_code == 200 and response.content:
         data = response.json()
+        app.logger.debug(data)
         cache_game(path, json.dumps(data))
         return data
     else:
@@ -71,7 +72,11 @@ def cache_game(path, data):
 def format_game_data(game_data, app_id):
     released = game_data.get("release_date", {}).get("date", None)
     if released:
-        released = parser.parse("07 May, 2024").strftime('%Y-%m-%dT%H:%M:%SZ')
+        # Fallback to none if date is invalid
+        try:
+            released = parser.parse(released).strftime('%Y-%m-%dT%H:%M:%SZ')
+        except parser.ParserError:
+            released = None
         
     return {
         "id": game_data["steam_appid"],
@@ -115,7 +120,6 @@ def search_steam_games():
 @app.route("/api/games/<int:app_id>", methods=["GET"])
 def get_steam_game(app_id):
     steam_game = get_steam_app_details(request.full_path, app_id, request.args.get("lang", language))
-    app.logger.debug(steam_game)
     if not steam_game or str(app_id) not in steam_game or steam_game.get(str(app_id))["success"] == False:
         return jsonify({"error": "Game not found"}), 404
     game_data = steam_game[str(app_id)]["data"]

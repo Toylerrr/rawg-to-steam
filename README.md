@@ -55,8 +55,9 @@ If you want to set a default language to `german` or `italian` for example for a
 - Maximum of 5 Search Results
 - No Pagination
 - No sorting, filters, or other advanced features
-- Too many requests could be rate-limited by Steam.
+- Steam could rate-limit your ip address if you make too many requests.
 - Developer and Publisher IDs are their hashed names, and not guaranteed to be unique, because Steam does not provide them.
+- Release Dates are empty for some languages like `japanese` and `korean`, because the `dateutils.parser` library does not support steams date format.
 
 ## Setup ⚙️
 
