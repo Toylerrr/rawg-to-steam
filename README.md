@@ -85,10 +85,11 @@ services:
     restart: always
 ```
 
-## Tips for Usage with GameVault 🎲
+## Usage with GameVault 🎲
 
 - Set GameVaults `RAWG_API_URL` environment variable to `https://rawg2steam.phalco.de/api` to redirect the requests to the hosted instance.
 - Set GameVaults `RAWG_API_CACHE_DAYS` environment variable to `36500`, so GameVault does not try to search for rawg ids of existing games on steam for the next 100 years.
+
 
 ## Credit 💡
 
@@ -96,4 +97,8 @@ services:
 
 - [python-steam-api](https://github.com/deivit24/python-steam-api) - for the Python Steam API Library.
 
+- [steamspy](https://steamspy.com) - for the SteamSpy API used for tags.
+
 - [flask](https://github.com/pallets/flask) - for the framework used in the project.
+
+- [Valve](https://store.steampowered.com/) - for the free to use Steam API.

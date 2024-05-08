@@ -1,5 +1,11 @@
 # Changelog
 
+## v7
+
+- Added Support for more tags using the SteamSpy API
+- Added automatic retries for API calls
+- Added `search_results` metric
+
 ## v6
 
 - Fixed a bug where the default language would be C.UTF8

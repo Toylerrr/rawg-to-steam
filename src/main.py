@@ -14,7 +14,7 @@ from steam_web_api import Steam
 from waitress import serve
 
 default_language = os.environ.get("R2S_LANG", "english")
-log_level = os.environ.get("R2S_LOG_LEVEL", logging.INFO)
+log_level = int(os.environ.get("R2S_LOG_LEVEL", logging.INFO))
 
 app = Flask(__name__)
 logger = logging.getLogger()
@@ -24,7 +24,8 @@ sanitizer = bleach.sanitizer.Cleaner(tags=[], attributes=[], strip=True, strip_c
 
 conn = sqlite3.connect('./database.sqlite', check_same_thread=False)
 cursor = conn.cursor()
-
+    
+#region Utility
 def clean_string(string):
     string = html.unescape(string)
     string = sanitizer.clean(string)
@@ -33,27 +34,72 @@ def clean_string(string):
     string = string.encode('ascii', 'ignore').decode('unicode_escape')
     return string
 
-def increment_stat(stat):
-    cursor.execute("INSERT OR IGNORE INTO stats (stat, count) VALUES (?, 0)", (stat,))
-    cursor.execute("UPDATE stats SET count = count + 1 WHERE stat = ?", (stat,))
-    conn.commit()
+def retry_request(url, retries=3):
+    for _ in range(retries):
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.error(f"Failed to retrieve data. Status code: {response.status_code}")
+            time.sleep(1)
+    logger.error("Failed to retrieve data after multiple attempts.")
+    return None
+#endregion
 
+#region Business Logic
 def get_steam_app_details(app_id, lang_parameter=default_language):
     url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l={lang_parameter}"
     cached_data = get_cached_data(url)
     if cached_data:
+        increment_stat('games_from_cache')
         return cached_data
 
-    response = requests.get(url)
-    if response.status_code == 200 and response.content:
-        data = response.json()
-        app.logger.debug(data)
+    data = retry_request(url)
+    app.logger.debug(data)
+    if data and data.get(str(app_id), {}).get("success", False) == True:
         cache_data(url, json.dumps(data))
         return data
     else:
-        logger.error(f"Failed to retrieve data. Status code: {response.status_code}")
+        logger.error("Failed to retrieve data.")
         return None
 
+def get_game_tags(app_id):
+    url = f"https://steamspy.com/api.php?request=appdetails&appid={app_id}"
+    cached_data = get_cached_data(url)
+    if cached_data:
+        return cached_data
+
+    data = retry_request(url)
+    if data and "tags" in data:
+        tags = data.get("tags", [])
+        game_tags = [{"id": tag_id, "name": tag_name, "language": "eng"} for tag_name, tag_id in tags.items()]
+        app.logger.debug(data)
+        cache_data(url, json.dumps(data))
+        return game_tags
+    else:
+        logger.error("Failed to retrieve tags.")
+        return None
+
+
+def map_game(game_data, app_id):        
+    return {
+        "id": game_data["steam_appid"],
+        "name": clean_string(game_data["name"]),
+        "slug": clean_string(game_data["name"]).lower().replace(" ", "-"),
+        "background_image": game_data.get("background_raw") or (game_data.get("screenshots", []) and game_data["screenshots"][0].get("path_full")) or game_data.get("header_image") or None,
+        "box_image": f"https://steamcdn-a.akamaihd.net/steam/apps/{app_id}/library_600x900_2x.jpg",
+        "description_raw": clean_string(game_data.get("detailed_description", "")),
+        "metacritic": game_data.get("metacritic", {}).get("score", None),
+        "website": game_data.get("website", None),
+        "genres": [{"id": int(genre.get("id", None)), "name": genre.get("description", None)} for genre in game_data.get("genres", [])],
+        "tags": [{"id": int(tag.get("id", None)), "name": tag.get("description", None), "language": "eng"} for tag in game_data.get("categories", [])],
+        "released": parser.parse(game_data.get("release_date", {}).get("date", None)).strftime('%Y-%m-%dT%H:%M:%SZ') if game_data.get("release_date", {}).get("date", None) else None,
+        "developers": [{"id": abs(hash(dev)) % (10 ** 9), "name": dev} for dev in game_data.get("developers", [])],
+        "publishers": [{"id": abs(hash(pub)) % (10 ** 9), "name": pub} for pub in game_data.get("publishers", [])],
+    }
+#endregion
+
+#region Cache
 def cache_data(url, data):
     cursor.execute("REPLACE INTO cache (url, data, timestamp) VALUES (?, ?, ?)", (url, data, time()))
     conn.commit()
@@ -67,34 +113,15 @@ def get_cached_data(url):
         data, timestamp = result
         if time() - timestamp <= 30 * 24 * 3600:
             logger.debug(f"Retrieved cached data for {url}")
-            increment_stat('games_from_cache')
             return json.loads(data)
     return None
 
-def format_game_data(game_data, app_id):
-    released = game_data.get("release_date", {}).get("date", None)
-    if released:
-        # Fallback to none if date is invalid
-        try:
-            released = parser.parse(released).strftime('%Y-%m-%dT%H:%M:%SZ')
-        except parser.ParserError:
-            released = None
-        
-    return {
-        "id": game_data["steam_appid"],
-        "name": clean_string(game_data["name"]),
-        "slug": clean_string(game_data["name"]).lower().replace(" ", "-"),
-        "background_image": game_data.get("background_raw") or (game_data.get("screenshots", []) and game_data["screenshots"][0].get("path_full")) or game_data.get("header_image") or None,
-        "box_image": f"https://steamcdn-a.akamaihd.net/steam/apps/{app_id}/library_600x900_2x.jpg",
-        "description_raw": clean_string(game_data.get("detailed_description", "")),
-        "metacritic": game_data.get("metacritic", {}).get("score", None),
-        "website": game_data.get("website", None),
-        "genres": [{"id": int(genre.get("id", None)), "name": genre.get("description", None)} for genre in game_data.get("genres", [])],
-        "tags": [{"id": int(tag.get("id", None)), "name": tag.get("description", None), "language": "eng"} for tag in game_data.get("categories", [])],
-        "released": released,
-        "developers": [{"id": abs(hash(dev)) % (10 ** 9), "name": dev} for dev in game_data.get("developers", [])],
-        "publishers": [{"id": abs(hash(pub)) % (10 ** 9), "name": pub} for pub in game_data.get("publishers", [])],
-    }
+def increment_stat(stat, amount=1):
+    cursor.execute("INSERT OR IGNORE INTO stats (stat, count) VALUES (?, 0)", (stat,))
+    cursor.execute("UPDATE stats SET count = count + ? WHERE stat = ?", (amount, stat))
+    conn.commit()
+#endregion
+
 
 @app.route("/api/games", methods=["GET"])
 def search_steam_games():
@@ -109,7 +136,7 @@ def search_steam_games():
                 "id": game["id"][0],
                 "slug": clean_string(game["name"]).lower().replace(" ", "-"),
                 "name": clean_string(game["name"]),
-                "background_image": f"https://cdn.akamai.steamstatic.com/steam/apps/{game['id'][0]}/capsule_231x87.jpg",
+                "background_image": f"https://cdn.akamai.steamstatic.com/steam/apps/{game['id'][0]}header.jpg",
                 "platforms": [{"platform": {"id": 1, "name": "Steam"}}],
                 "box_art": f"https://steamcdn-a.akamaihd.net/steam/apps/{game['id'][0]}/library_600x900_2x.jpg"
             }
@@ -117,16 +144,21 @@ def search_steam_games():
         ]
     }
     increment_stat('searches')
+    increment_stat('search_results', len(steam_games["apps"]))
     return jsonify(formatted_games)
 
 @app.route("/api/games/<int:app_id>", methods=["GET"])
 def get_steam_game(app_id):
-    steam_game = get_steam_app_details( app_id, request.args.get("lang", default_language))
-    if not steam_game or str(app_id) not in steam_game or steam_game.get(str(app_id))["success"] == False:
+    steam_game = get_steam_app_details(app_id, request.args.get("lang", default_language))
+    if not steam_game:
         return jsonify({"error": "Game not found"}), 404
-    game_data = steam_game[str(app_id)]["data"]
+    game_data = steam_game.get(str(app_id), {}).get("data", {})
+    mapped_game = map_game(game_data, app_id)
+    tags = get_game_tags(app_id)
+    if tags:
+        mapped_game.setdefault("tags", []).extend(tags)
     increment_stat('games')
-    return jsonify(format_game_data(game_data, app_id))
+    return jsonify(mapped_game)
 
 @app.route("/api/stats")
 def stats():
