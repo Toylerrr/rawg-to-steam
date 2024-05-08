@@ -48,7 +48,7 @@ You will need to mount that file somewhere, so the data can persist.
 
 ### Selecting a default language
 
-If you want to set a default language to `german` or `italian` for example for all incoming requests, you can set `STEAM_DEFAULT_LANGUAGE=german` in your environment variables. Default value is `english`.
+If you want to set a default language to `german` or `italian` for example for all incoming requests, you can set `R2S_LANG=german` in your environment variables. Default value is `english`.
 
 ## Changing the Log Level
 
