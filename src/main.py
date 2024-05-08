@@ -74,7 +74,7 @@ def get_game_tags(app_id):
         tags = data.get("tags", [])
         game_tags = [{"id": tag_id, "name": tag_name, "language": "eng"} for tag_name, tag_id in tags.items()]
         app.logger.debug(data)
-        cache_data(url, json.dumps(data))
+        cache_data(url, json.dumps(game_tags))
         return game_tags
     else:
         logger.error("Failed to retrieve tags.")
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     #Migrations
     cursor.execute('''DROP TABLE IF EXISTS games''')
     cursor.execute('''DROP TABLE IF EXISTS games_v2''')
-    cursor.execute('''DELETE FROM cache WHERE timestamp < 1715207330''')
+    cursor.execute('''DELETE FROM cache WHERE timestamp < 1715210567''')
 
     #Init
     cursor.execute('''CREATE TABLE IF NOT EXISTS cache (url TEXT PRIMARY KEY, data TEXT, timestamp REAL)''')
