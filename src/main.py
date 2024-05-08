@@ -189,4 +189,5 @@ if __name__ == "__main__":
     cursor.execute('''DROP TABLE IF EXISTS games''')
     cursor.execute('''DROP TABLE IF EXISTS games_v2''')
     cursor.execute('''DELETE FROM cache WHERE timestamp < 1715210567''')
+    conn.commit()
     serve(app, host="0.0.0.0", port=9999)
