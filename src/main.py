@@ -185,7 +185,7 @@ if __name__ == "__main__":
     #Migrations
     cursor.execute('''DROP TABLE IF EXISTS games''')
     cursor.execute('''DROP TABLE IF EXISTS games_v2''')
-    cursor.execute('''DELETE FROM cache WHERE timestamp > 1715207330''')
+    cursor.execute('''DELETE FROM cache WHERE timestamp < 1715207330''')
 
     #Init
     cursor.execute('''CREATE TABLE IF NOT EXISTS cache (url TEXT PRIMARY KEY, data TEXT, timestamp REAL)''')
