@@ -48,7 +48,11 @@ You will need to mount that file somewhere, so the data can persist.
 
 ### Selecting a default language
 
-If you want to set a default language to `german` or `italian` for example for all incoming requests, you can set `LANG=german` in your environment variables.
+If you want to set a default language to `german` or `italian` for example for all incoming requests, you can set `STEAM_DEFAULT_LANGUAGE=german` in your environment variables. Default value is `english`.
+
+## Changing the Log Level
+
+You can change the log level by setting the `R2S_LOG_LEVEL` environment variable that controls logging verbosity. See possible values [here](https://docs.python.org/3/library/logging.html#logging-levels). Default value is `20`.
 
 ## Limitations ❗
 
@@ -61,9 +65,9 @@ If you want to set a default language to `german` or `italian` for example for a
 
 ## Setup ⚙️
 
-### Hosted Instance ☁️
+### Hosted Instances ☁️
 
-Access a publicly available hosted instance by [Phalcode](https://phalco.de) is available at [https://rawg2steam.phalco.de](https://rawg2steam.phalco.de).
+You are free to use a publicly available hosted instance by [Phalcode](https://phalco.de) is available at [https://rawg2steam.phalco.de](https://rawg2steam.phalco.de).
 
 ### Setting Up Your Own Instance 🛠️
 

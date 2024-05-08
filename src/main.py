@@ -13,12 +13,14 @@ from dateutil import parser
 from steam_web_api import Steam
 from waitress import serve
 
+default_language = os.environ.get("R2S_LANG", "english")
+log_level = os.environ.get("R2S_LOG_LEVEL", logging.INFO)
+
 app = Flask(__name__)
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(log_level)
 
 sanitizer = bleach.sanitizer.Cleaner(tags=[], attributes=[], strip=True, strip_comments=True, filters=[], protocols=[])
-language = os.environ.get("LANG", "english")
 
 conn = sqlite3.connect('./database.sqlite', check_same_thread=False)
 cursor = conn.cursor()
@@ -36,38 +38,38 @@ def increment_stat(stat):
     cursor.execute("UPDATE stats SET count = count + 1 WHERE stat = ?", (stat,))
     conn.commit()
 
-def get_steam_app_details(path, app_id, lang=language):
-    cached_data = get_cached_data(path)
+def get_steam_app_details(app_id, lang_parameter=default_language):
+    url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l={lang_parameter}"
+    cached_data = get_cached_data(url)
     if cached_data:
         return cached_data
 
-    url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&l={lang}"
     response = requests.get(url)
     if response.status_code == 200 and response.content:
         data = response.json()
         app.logger.debug(data)
-        cache_game(path, json.dumps(data))
+        cache_data(url, json.dumps(data))
         return data
     else:
         logger.error(f"Failed to retrieve data. Status code: {response.status_code}")
         return None
 
-def get_cached_data(path):
-    cursor.execute("SELECT data, timestamp FROM games_v2 WHERE path = ?", (path,))
+def cache_data(url, data):
+    cursor.execute("REPLACE INTO cache (url, data, timestamp) VALUES (?, ?, ?)", (url, data, time()))
+    conn.commit()
+    logger.debug(f"Cached data for {url}")
+
+def get_cached_data(url):
+    cursor.execute("SELECT data, timestamp FROM cache WHERE url = ?", (url,))
     result = cursor.fetchone()
 
     if result:
         data, timestamp = result
         if time() - timestamp <= 30 * 24 * 3600:
-            logger.debug(f"Retrieved cached data for {path}")
+            logger.debug(f"Retrieved cached data for {url}")
             increment_stat('games_from_cache')
             return json.loads(data)
     return None
-
-def cache_game(path, data):
-    cursor.execute("REPLACE INTO games_v2 (path, data, timestamp) VALUES (?, ?, ?)", (path, data, time()))
-    conn.commit()
-    logger.debug(f"Cached data for {path}")
 
 def format_game_data(game_data, app_id):
     released = game_data.get("release_date", {}).get("date", None)
@@ -82,7 +84,7 @@ def format_game_data(game_data, app_id):
         "id": game_data["steam_appid"],
         "name": clean_string(game_data["name"]),
         "slug": clean_string(game_data["name"]).lower().replace(" ", "-"),
-        "background_image": game_data.get("background_raw", game_data.get("screenshots", [])[0].get("path_full", game_data.get("header_image", ""))),
+        "background_image": game_data.get("background_raw") or (game_data.get("screenshots", []) and game_data["screenshots"][0].get("path_full")) or game_data.get("header_image") or None,
         "box_image": f"https://steamcdn-a.akamaihd.net/steam/apps/{app_id}/library_600x900_2x.jpg",
         "description_raw": clean_string(game_data.get("detailed_description", "")),
         "metacritic": game_data.get("metacritic", {}).get("score", None),
@@ -119,7 +121,7 @@ def search_steam_games():
 
 @app.route("/api/games/<int:app_id>", methods=["GET"])
 def get_steam_game(app_id):
-    steam_game = get_steam_app_details(request.full_path, app_id, request.args.get("lang", language))
+    steam_game = get_steam_app_details( app_id, request.args.get("lang", default_language))
     if not steam_game or str(app_id) not in steam_game or steam_game.get(str(app_id))["success"] == False:
         return jsonify({"error": "Game not found"}), 404
     game_data = steam_game[str(app_id)]["data"]
@@ -132,7 +134,7 @@ def stats():
     stats_data = cursor.fetchall()
     style_string ="<head><link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css'/></head>"
     stats_string = "<br>".join([f"✅ {stat[0]}: {stat[1]}" for stat in stats_data])
-    return f"{style_string}<h1>🙏 This rawg-to-steam-redirect Server has proudly translated: ✨</h1>{stats_string}"
+    return f"{style_string}<h1>🙏 This rawg-to-steam-redirect instance has proudly served: ✨</h1>{stats_string}"
 
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
@@ -148,7 +150,8 @@ def log_request(response):
 
 if __name__ == "__main__":
     cursor.execute('''DROP TABLE IF EXISTS games''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS games_v2 (path TEXT PRIMARY KEY, data TEXT, timestamp REAL)''')
+    cursor.execute('''DROP TABLE IF EXISTS games_v2''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS cache (url TEXT PRIMARY KEY, data TEXT, timestamp REAL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS stats (stat TEXT PRIMARY KEY, count INTEGER)''')
-    cursor.execute('''CREATE INDEX IF NOT EXISTS idx_path ON games_v2 (path)''')
+    cursor.execute('''CREATE INDEX IF NOT EXISTS idx_url ON cache (url)''')
     serve(app, host="0.0.0.0", port=9999)

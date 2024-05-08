@@ -1,5 +1,13 @@
 # Changelog
 
+## v6
+
+- Fixed a bug where the default language would be C.UTF8
+- Changed environment variable `LANG` to `R2S_LANG`
+- Implemented `R2S_LOG_LEVEL` environment variable that controls logging verbosity. See possible values [here](https://docs.python.org/3/library/logging.html#logging-levels).
+- Made cache apply on forwarded request url instead of original request url
+- Fixed internal server error for games without screenshots
+
 ## v5
 
 - Improved DateParser - Fixes [Phalcode/rawg-to-steam-redirect#1](https://github.com/Phalcode/rawg-to-steam-redirect/issues/1)
