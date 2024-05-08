@@ -181,8 +181,13 @@ def log_request(response):
     return response
 
 if __name__ == "__main__":
+
+    #Migrations
     cursor.execute('''DROP TABLE IF EXISTS games''')
     cursor.execute('''DROP TABLE IF EXISTS games_v2''')
+    cursor.execute('''DELETE FROM cache WHERE timestamp > 1715207330''')
+
+    #Init
     cursor.execute('''CREATE TABLE IF NOT EXISTS cache (url TEXT PRIMARY KEY, data TEXT, timestamp REAL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS stats (stat TEXT PRIMARY KEY, count INTEGER)''')
     cursor.execute('''CREATE INDEX IF NOT EXISTS idx_url ON cache (url)''')
