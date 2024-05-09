@@ -136,7 +136,7 @@ def search_steam_games():
                 "id": game["id"][0],
                 "slug": clean_string(game["name"]).lower().replace(" ", "-"),
                 "name": clean_string(game["name"]),
-                "background_image": f"https://cdn.akamai.steamstatic.com/steam/apps/{game['id'][0]}header.jpg",
+                "background_image": f"https://cdn.akamai.steamstatic.com/steam/apps/{game['id'][0]}/header.jpg",
                 "platforms": [{"platform": {"id": 1, "name": "Steam"}}],
                 "box_art": f"https://steamcdn-a.akamaihd.net/steam/apps/{game['id'][0]}/library_600x900_2x.jpg"
             }
@@ -188,6 +188,6 @@ if __name__ == "__main__":
     #Migrations
     cursor.execute('''DROP TABLE IF EXISTS games''')
     cursor.execute('''DROP TABLE IF EXISTS games_v2''')
-    cursor.execute('''DELETE FROM cache WHERE timestamp < 1715210567''')
+    cursor.execute('''DELETE FROM cache WHERE timestamp < 1715249693''')
     conn.commit()
     serve(app, host="0.0.0.0", port=9999)
