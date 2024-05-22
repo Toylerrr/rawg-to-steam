@@ -13,10 +13,9 @@ target/
 .env.local
 .env.*.local
 
-# Ignore system and backup files
-.DS_Store
 Thumbs.db
 *.bak
+*.sqlite
 
 # Ignore npm dependencies
 node_modules/
